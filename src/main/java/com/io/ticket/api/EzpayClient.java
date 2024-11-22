@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-@FeignClient(name = "payment-api", url = "http://your-server-url.com")
+@FeignClient(name = "EzpayClient", url = "${ezpay.gateway.url}")
 public interface EzpayClient {
 
     @PostMapping("/api/merchant/payment/ipg")

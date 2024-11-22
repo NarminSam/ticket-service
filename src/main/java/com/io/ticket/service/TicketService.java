@@ -12,49 +12,50 @@ import java.util.concurrent.ConcurrentHashMap;
 @AllArgsConstructor
 public class TicketService {
 
-        private final HolidayCheckerClient holidayApiClient;
-        private final IdGeneratorClient randomStringApiClient;
-        private final Map<String, Integer> ticketsSold = new ConcurrentHashMap<>();
+    private final HolidayCheckerClient holidayCheckerClient;
+    private final IdGeneratorClient idGeneratorClient;
+    private final PaymentService paymentService;
+    private final Map<String, Integer> ticketsSold = new ConcurrentHashMap<>();
 
-        public String sellTicket(String date) {
-            // Validate if the date is an official holiday
-            if (date == null || date.length() != 8) {
-                throw new IllegalArgumentException("Invalid date format. Expected yyyyMMdd.");
-            }
+    public String sellTicket(String date) {
+        validateDate(date);
+        // Check ticket availability
+        ticketsSold.putIfAbsent(date, 0);
+        if (ticketsSold.get(date) >= 10) {
+            return "All tickets for this date are sold out.";
+        }
+        String ticketId = idGeneratorClient.generateTicketId();
+        var paymentUrl = processPayment(ticketId);
+        ticketsSold.put(date, ticketsSold.get(date) + 1);
+        return "از لینک اقدام به پرداخت نمایید : " + paymentUrl;
+    }
 
-            // Extract the year, month, and day from the date string
-            String year = date.substring(0, 4);   // First 4 characters for year
-            String month = date.substring(4, 6);  // Next 2 characters for month
-            String day = date.substring(6, 8);
-            StringBuilder newDate = new StringBuilder();
-            newDate.append(year).append("/").append(month).append("/").append(day);
-            Map<String, Object> holidayResponse = holidayApiClient.checkHoliday(newDate.toString());
+    private String processPayment(String ticketId) {
+        return paymentService.initiatePayment(ticketId).getPaymentLink();
+    }
+
+    private void validateDate(String date){
+        if (date == null || date.length() != 8) {
+            throw new IllegalArgumentException("قالب تاریخ نامعتبر است. فرمت مورد نظر به صورت yyyyMMdd می باشد.");
+        }
+
+        Map<String, Object> holidayResponse = holidayCheckerClient.checkHoliday(reformatDate(date));
+        if((Boolean) holidayResponse.getOrDefault("status", true)) {
             Boolean isHoliday = (Boolean) holidayResponse.getOrDefault("is_holiday", false);
             if (!isHoliday) {
-                return "Tickets are only sold for official holidays.";
-            }
-
-            // Check ticket availability
-            ticketsSold.putIfAbsent(date, 0);
-            if (ticketsSold.get(date) >= 10) {
-                return "All tickets for this date are sold out.";
-            }
-
-            // Simulate payment processing
-            processPayment(1000);
-
-            // Generate ticket ID
-            String ticketId = randomStringApiClient.generateTicketId();
-            ticketsSold.put(date, ticketsSold.get(date) + 1);
-
-            return "Your ticket ID: " + ticketId;
-        }
-
-        private void processPayment(int amount) {
-            // Mock payment gateway logic
-            if (amount != 1000) {
-                throw new RuntimeException("Payment failed");
+                throw new IllegalArgumentException("تنها برای روزهای تعطیل رسمی - جمعه و تعطیلات رسمی تقویمی- بلیت به فروش می رسد.");
             }
         }
+        else throw new IllegalArgumentException("قالب تاریخ نامعتبر است. فرمت مورد نظر به صورت yyyyMMdd می باشد.");
+    }
+
+    private String reformatDate(String date) {
+        StringBuilder newDate = new StringBuilder()
+                .append(date, 0, 4).append("/")  // Append year and slash
+                .append(date, 4, 6).append("/")  // Append month and slash
+                .append(date, 6, 8);             // Append day
+
+        return newDate.toString();
+}
 
 }

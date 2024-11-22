@@ -16,21 +16,21 @@ import java.nio.charset.StandardCharsets;
 public class PaymentService {
     private final EzpayClient ezpayClient;
 
-    @Value("${payment.gateway.url}")
-    private String paymentGatewayUrl;
+    @Value("${ezpay.token}")
+    private String EZPAY_TOKEN;
+    @Value("${ezpay.redirect.url}")
+    private String EZPAY_REDIRECT_URL;
+    @Value("${ezpay.expiration.time}")
+    private int EZPAY_EXPIRATION_TIME;
+    @Value("${ezpay.ticket.fee}")
+    private long EZPAY_TICKET_FEE;
 
-    @Value("${payment.token}")
-    private String paymentToken;
-
-    public PaymentResponse initiatePayment() {
-        var paymentRequest = PaymentRequest.init(10000, "123456", "http://localhost:8081/", "09111111111", 100000);
-
-        return ezpayClient.initiatePayment(paymentToken, paymentRequest);
+    public PaymentResponse initiatePayment(String factorId) {
+        var paymentRequest = PaymentRequest.init(EZPAY_TICKET_FEE, factorId, EZPAY_REDIRECT_URL, "09111111111", EZPAY_EXPIRATION_TIME);
+        return ezpayClient.initiatePayment(EZPAY_TOKEN, paymentRequest);
     }
 
-    // Method to handle the payment callback
     public String handlePaymentCallback(EzpayCallbackRequest callbackRequest) {
-        // Check status code and inform user of success/failure
         if (callbackRequest.statusCode() == 0) {
             return "Ticket purchase successful for factor number: " + callbackRequest.factorNumber();
         } else {

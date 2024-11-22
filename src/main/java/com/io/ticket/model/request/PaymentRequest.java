@@ -5,19 +5,13 @@ import lombok.Builder;
 @Builder
 public record PaymentRequest(
         long amount,
-        long minAmount,
-        long maxAmount,
+        //long minAmount,
+        //long maxAmount,
         String factorNumber,
         String redirectUrl,
-        String cardNumber,
         String phoneNumber,
-        int expireInSeconds,
-        FeeDetails feeDetails
+        int expireInSeconds
 ) {
-    public record FeeDetails(
-            long beneficiaryFeeAmount,
-            long userFeeAmount
-    ) {}
 
     public static PaymentRequest init(long amount,
                                       String factorNumber,

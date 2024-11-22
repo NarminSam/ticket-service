@@ -13,12 +13,6 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
-    @PostMapping("/initiate")
-    public ResponseEntity<String> initiatePayment() {
-        String paymentLink = paymentService.initiatePayment().getPaymentLink();
-        return ResponseEntity.ok(paymentLink);
-    }
-
     // Endpoint to handle the callback after the payment
     @GetMapping("/callback")
     public ResponseEntity<String> handlePaymentCallback(@RequestParam String factorNumber,
