@@ -1,6 +1,8 @@
 package com.io.ticket.service;
 
 import com.io.ticket.api.EzpayClient;
+import com.io.ticket.common.PaymentResultCode;
+import com.io.ticket.exception.ExceptionResource;
 import com.io.ticket.model.request.EzpayCallbackRequest;
 import com.io.ticket.model.request.PaymentRequest;
 import com.io.ticket.model.response.PaymentResponse;
@@ -26,12 +28,17 @@ public class PaymentService {
     private long EZPAY_TICKET_FEE;
 
     public PaymentResponse initiatePayment(String factorId) {
-        var paymentRequest = PaymentRequest.init(EZPAY_TICKET_FEE, factorId, EZPAY_REDIRECT_URL, "09111111111", EZPAY_EXPIRATION_TIME);
-        return ezpayClient.initiatePayment(EZPAY_TOKEN, paymentRequest);
+        try {
+            var paymentRequest = PaymentRequest.init(EZPAY_TICKET_FEE, factorId, EZPAY_REDIRECT_URL, EZPAY_EXPIRATION_TIME);
+            return ezpayClient.initiatePayment(EZPAY_TOKEN, paymentRequest);
+        }catch(Exception e){
+            throw new IllegalArgumentException(ExceptionResource.INVALID_PAYMENT_REQUEST);
+        }
     }
 
     public String handlePaymentCallback(EzpayCallbackRequest callbackRequest) {
-        if (callbackRequest.statusCode() == 0) {
+        if (callbackRequest.statusCode() == PaymentResultCode.SUCCESS.getCode()) {
+            ezpayClient.validatePayment(EZPAY_TOKEN, callbackRequest.processUid(), EZPAY_TICKET_FEE);
             return "Ticket purchase successful for factor number: " + callbackRequest.factorNumber();
         } else {
             return "Ticket purchase failed: " + URLDecoder.decode(callbackRequest.statusDesc(), StandardCharsets.UTF_8);
