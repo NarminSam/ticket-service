@@ -2,8 +2,10 @@ package com.io.ticket.service;
 
 import com.io.ticket.api.HolidayCheckerClient;
 import com.io.ticket.api.IdGeneratorClient;
+import com.io.ticket.entity.TicketSale;
 import com.io.ticket.exception.ExceptionResource;
-import com.io.ticket.util.DateReformUtil;
+import com.io.ticket.exception.MessageResource;
+import com.io.ticket.util.StringReformUtil;
 import org.springframework.cache.annotation.Cacheable;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,14 +20,22 @@ public class TicketService {
     private final PaymentService paymentService;
     private final TicketSaleService ticketSaleService;
 
+
     public String sellTicket(String date) {
-        validateDate(date);
-        var paymentUrl = processPayment(idGeneratorClient.generateTicketId());
-        return "از لینک اقدام به پرداخت نمایید : " + paymentUrl;
+        try {
+            validateDate(date);
+            var factorId = idGeneratorClient.generateTicketId();
+            factorId = StringReformUtil.reformString(factorId);
+            var paymentUrl = processPayment(factorId);
+            ticketSaleService.saveTicketSale(TicketSale.init(date, factorId));
+            return String.format(MessageResource.PAYMENT_LINK_STRING, paymentUrl);
+        }catch(Exception e) {
+            throw new IllegalArgumentException(ExceptionResource.GENERAL_ERROR);
+        }
     }
 
-    private String processPayment(String ticketId) {
-        return paymentService.initiatePayment(ticketId).getPaymentLink();
+    private String processPayment(String factorId) {
+        return paymentService.initiatePayment(factorId).getPaymentLink();
     }
 
     private void validateDate(String date){
@@ -49,7 +59,7 @@ public class TicketService {
 
     @Cacheable(value = "holidays", key = "#date", condition = "#date != null")
     public Map<String, Object> checkHoliday(String date){
-        return holidayCheckerClient.checkHoliday(DateReformUtil.reformatDate(date));
+        return holidayCheckerClient.checkHoliday(StringReformUtil.reformatDate(date));
     }
 
 }

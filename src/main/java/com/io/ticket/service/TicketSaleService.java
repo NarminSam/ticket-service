@@ -21,4 +21,8 @@ public class TicketSaleService {
     public boolean isDateAvailable(String date){
         return ticketSaleRepository.countByDate(date) < SALE_LIMIT_PER_DAY;
     }
+
+    public boolean isPaymentDuplicate(String requestUid){
+        return ticketSaleRepository.existsByRequestUid(requestUid);
+    }
 }

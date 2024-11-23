@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.Map;
 
-@FeignClient(name = "holiday-checker", url = "https://holidayapi.ir")
+@FeignClient(name = "holiday-checker", url = "${holiday.chacker.url}")
 public interface HolidayCheckerClient {
 
     @GetMapping("/jalali/{date}")

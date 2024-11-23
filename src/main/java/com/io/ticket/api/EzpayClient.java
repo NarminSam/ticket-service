@@ -2,6 +2,7 @@ package com.io.ticket.api;
 
 import com.io.ticket.model.request.PaymentRequest;
 import com.io.ticket.model.response.PaymentResponse;
+import com.io.ticket.model.response.PaymentValidationResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +17,7 @@ public interface EzpayClient {
             @RequestBody PaymentRequest paymentRequest);
 
     @PutMapping("/api/merchant/payment/ipg/{processUid}")
-    Map<String, Object> validatePayment(
+    PaymentValidationResponse validatePayment(
             @RequestHeader("Token") String token,
             @PathVariable("processUid") String processUid,
             @RequestParam("amount") Long amount

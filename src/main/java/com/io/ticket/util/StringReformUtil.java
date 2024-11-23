@@ -1,6 +1,6 @@
 package com.io.ticket.util;
 
-public class DateReformUtil {
+public class StringReformUtil {
 
     public static String reformatDate(String date) {
         StringBuilder newDate = new StringBuilder()
@@ -9,6 +9,10 @@ public class DateReformUtil {
                 .append(date, 6, 8);             // Append day
 
         return newDate.toString();
+    }
+
+    public static String reformString(String text) {
+        return text.replaceAll("[\\[\\]\"]", "");
     }
 
 }

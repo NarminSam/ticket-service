@@ -3,9 +3,11 @@ package com.io.ticket.service;
 import com.io.ticket.api.EzpayClient;
 import com.io.ticket.common.PaymentResultCode;
 import com.io.ticket.exception.ExceptionResource;
+import com.io.ticket.exception.MessageResource;
 import com.io.ticket.model.request.EzpayCallbackRequest;
 import com.io.ticket.model.request.PaymentRequest;
 import com.io.ticket.model.response.PaymentResponse;
+import com.io.ticket.repo.TicketSaleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,8 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class PaymentService {
     private final EzpayClient ezpayClient;
+    private final TicketSaleService ticketSaleService;
+    private final TicketSaleRepository ticketSaleRepository;
 
     @Value("${ezpay.token}")
     private String EZPAY_TOKEN;
@@ -37,11 +41,35 @@ public class PaymentService {
     }
 
     public String handlePaymentCallback(EzpayCallbackRequest callbackRequest) {
-        if (callbackRequest.statusCode() == PaymentResultCode.SUCCESS.getCode()) {
-            ezpayClient.validatePayment(EZPAY_TOKEN, callbackRequest.processUid(), EZPAY_TICKET_FEE);
-            return "Ticket purchase successful for factor number: " + callbackRequest.factorNumber();
-        } else {
-            return "Ticket purchase failed: " + URLDecoder.decode(callbackRequest.statusDesc(), StandardCharsets.UTF_8);
+        try {
+            if (callbackRequest.statusCode() != PaymentResultCode.SUCCESS.getCode()) {
+                return handleFailure(callbackRequest);
+            }
+            var ticketSale = ticketSaleRepository.getTicketSaleByFactor(callbackRequest.factorNumber()).orElseThrow();
+            var paymentValidationResponse = ezpayClient.validatePayment(
+                    EZPAY_TOKEN,
+                    callbackRequest.processUid(),
+                    EZPAY_TICKET_FEE
+            );
+
+            if (ticketSaleService.isPaymentDuplicate(paymentValidationResponse.getRequestUid())) {
+                throw new IllegalArgumentException(ExceptionResource.INVALID_PAYMENT_DETAILS);
+            }
+            ticketSale.update(callbackRequest.processUid());
+            ticketSaleService.saveTicketSale(ticketSale);
+
+            return handleSuccess(callbackRequest);
+
+        } catch (Exception e) {
+            return handleFailure(callbackRequest);
         }
+    }
+
+    private String handleSuccess(EzpayCallbackRequest callbackRequest) {
+        return String.format(MessageResource.TICKET_PURCHASE_SUCCESSFUL, callbackRequest.factorNumber());
+    }
+
+    private String handleFailure(EzpayCallbackRequest callbackRequest) {
+        return String.format(MessageResource.TICKET_PURCHASE_UNSUCCESSFUL, callbackRequest.factorNumber());
     }
 }

@@ -7,6 +7,9 @@ import lombok.*;
 @Table(name = "ticket_sales")
 @Getter
 @Setter
+@Builder(access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor
 public class TicketSale {
 
     @Id
@@ -17,6 +20,22 @@ public class TicketSale {
     private String date;
 
     @Column(name = "factor", unique = true)
-    private int factor;
+    private String factor;
+
+    @Column(name = "request-uid", unique = true)
+    private String requestUid;
+
+    public static TicketSale init(String date ,String factor) {
+        return TicketSale.builder()
+                .date(date)
+                .factor(factor)
+                .build();
+    }
+
+    public void update( String requestUid) {
+        this.requestUid = requestUid != null ? requestUid : this.requestUid;
+    }
+
+
 
 }
