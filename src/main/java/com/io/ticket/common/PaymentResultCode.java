@@ -1,8 +1,10 @@
 package com.io.ticket.common;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
+@AllArgsConstructor
 public enum PaymentResultCode {
     SUCCESS(0, "پردازش موفق"),
     FAILED(2, "درخواست یا موجودیت مورد نظر یافت نشد"),
@@ -17,17 +19,4 @@ public enum PaymentResultCode {
     private final int code;
     private final String message;
 
-    PaymentResultCode(int code, String message) {
-        this.code = code;
-        this.message = message;
-    }
-
-    public static String getMessage(int code) {
-        for (PaymentResultCode resultCode : PaymentResultCode.values()) {
-            if (resultCode.getCode() == code) {
-                return resultCode.message;
-            }
-        }
-        throw new IllegalArgumentException("Unexpected code: " + code);
-    }
 }

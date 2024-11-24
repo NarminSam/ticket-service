@@ -1,5 +1,6 @@
 package com.io.ticket.repo;
 
+import com.io.ticket.common.TicketStatusCode;
 import com.io.ticket.entity.TicketSale;
 import feign.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,6 @@ public interface TicketSaleRepository extends JpaRepository<TicketSale, Long> {
 
     @Query("SELECT COUNT(t) FROM TicketSale t WHERE t.date = :date and t.requestUid is not null")
     long countByDate(@Param("date") String date);
-    boolean existsByRequestUid(String requestUid);
+    boolean existsByRequestUidAndStatus(String requestUid, TicketStatusCode statusCode);
     Optional<TicketSale> getTicketSaleByFactor(String Factor);
 }

@@ -2,6 +2,7 @@ package com.io.ticket.service;
 
 import com.io.ticket.api.EzpayClient;
 import com.io.ticket.common.PaymentResultCode;
+import com.io.ticket.common.TicketStatusCode;
 import com.io.ticket.exception.ExceptionResource;
 import com.io.ticket.exception.MessageResource;
 import com.io.ticket.model.request.EzpayCallbackRequest;
@@ -11,9 +12,6 @@ import com.io.ticket.repo.TicketSaleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +29,13 @@ public class PaymentService {
     @Value("${ezpay.ticket.fee}")
     private long EZPAY_TICKET_FEE;
 
+    /**
+     * Initiates a payment request by building a PaymentRequest object and calling the payment service.
+     *
+     * @param factorId The unique factor ID associated with the payment.
+     * @return A PaymentResponse containing details of the initiated payment, including the payment link.
+     * @throws IllegalArgumentException if an error occurs while creating or sending the payment request.
+     */
     public PaymentResponse initiatePayment(String factorId) {
         try {
             var paymentRequest = PaymentRequest.init(EZPAY_TICKET_FEE, factorId, EZPAY_REDIRECT_URL, EZPAY_EXPIRATION_TIME);
@@ -40,6 +45,13 @@ public class PaymentService {
         }
     }
 
+    /**
+     * Handles the payment callback received from the payment gateway after a payment is processed.
+     *
+     * @param callbackRequest The callback request object containing payment details from the gateway.
+     * @return A string message indicating the result of the ticket purchase (success or failure).
+     * @throws IllegalArgumentException if payment validation fails or there are errors with the ticket sale.
+     */
     public String handlePaymentCallback(EzpayCallbackRequest callbackRequest) {
         try {
             if (callbackRequest.statusCode() != PaymentResultCode.SUCCESS.getCode()) {
@@ -55,8 +67,8 @@ public class PaymentService {
             if (ticketSaleService.isPaymentDuplicate(paymentValidationResponse.getRequestUid())) {
                 throw new IllegalArgumentException(ExceptionResource.INVALID_PAYMENT_DETAILS);
             }
-            ticketSale.update(callbackRequest.processUid());
-            ticketSaleService.saveTicketSale(ticketSale);
+            ticketSale.update(callbackRequest.processUid(), paymentValidationResponse.getTransferInfo().getTransactionNumber(),TicketStatusCode.FINALIZED);
+            ticketSaleRepository.save(ticketSale);
 
             return handleSuccess(callbackRequest);
 

@@ -1,5 +1,6 @@
 package com.io.ticket.service;
 
+import com.io.ticket.common.TicketStatusCode;
 import com.io.ticket.entity.TicketSale;
 import com.io.ticket.repo.TicketSaleRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,15 +15,11 @@ public class TicketSaleService {
     @Value("${sale.limit.perday}")
     private int SALE_LIMIT_PER_DAY;
 
-    public void saveTicketSale(TicketSale ticketSale){
-        ticketSaleRepository.save(ticketSale);
-    }
-
     public boolean isDateAvailable(String date){
         return ticketSaleRepository.countByDate(date) < SALE_LIMIT_PER_DAY;
     }
 
     public boolean isPaymentDuplicate(String requestUid){
-        return ticketSaleRepository.existsByRequestUid(requestUid);
+        return ticketSaleRepository.existsByRequestUidAndStatus(requestUid, TicketStatusCode.FINALIZED);
     }
 }
